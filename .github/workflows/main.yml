@@ -17,29 +17,47 @@ jobs:
             libgmp-dev libmpfr-dev libmpc-dev libelf-dev libncurses5-dev \
             libpng-dev libfreetype6-dev zlib1g-dev wget
 
-      - name: Cache da toolchain
+      - name: Preparar pasta
+        run: |
+          sudo mkdir -p /usr/local/xenon
+          sudo chown -R $USER /usr/local/xenon
+
+      - name: Restaurar cache da toolchain
         id: cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: /usr/local/xenon
-          key: libxenon-toolchain-v1
+          key: libxenon-toolchain-v2
 
-      - name: Compilar toolchain + libxenon
+      - name: Compilar toolchain
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
           git clone https://github.com/Free60Project/libxenon.git
           cd libxenon/toolchain
           sudo ./build-xenon-toolchain toolchain
-          cd ..
+
+      - name: Salvar cache da toolchain
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: /usr/local/xenon
+          key: libxenon-toolchain-v2
+
+      - name: Clonar libxenon (se veio do cache)
+        run: |
+          [ -d libxenon ] || git clone https://github.com/Free60Project/libxenon.git
+
+      - name: Compilar libxenon
+        run: |
           export DEVKITXENON=/usr/local/xenon
-          export PATH=$PATH:$DEVKITXENON/bin
-          sudo -E env "PATH=$PATH" ./build-xenon-toolchain libxenon || true
-          sudo -E env "PATH=$PATH" make install
+          export PATH=$PATH:$DEVKITXENON/bin:$DEVKITXENON/usr/bin
+          cd libxenon/toolchain
+          sudo -E env "PATH=$PATH" ./build-xenon-toolchain libxenon
 
       - name: Compilar o jogo
         run: |
           export DEVKITXENON=/usr/local/xenon
-          export PATH=$PATH:$DEVKITXENON/bin
+          export PATH=$PATH:$DEVKITXENON/bin:$DEVKITXENON/usr/bin
           make
 
       - uses: actions/upload-artifact@v4
