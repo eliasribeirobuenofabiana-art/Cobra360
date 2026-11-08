@@ -4,21 +4,21 @@ export DEVKITXENON
 TARGET = cobra360
 OBJS   = main.o
 
-CXXFLAGS = -O2 -Wall
-
 include $(DEVKITXENON)/rules
 
-# Se o seu libxenon usar outro formato de rules, troque por:
-#   $(TARGET).elf: $(OBJS)
-#   	$(CXX) $(OBJS) $(LDFLAGS) -o $@
+.RECIPEPREFIX = >
+.DEFAULT_GOAL := all
 
 all: $(TARGET).elf32
 
+main.o: main.cpp
+> $(CXX) -O2 -Wall -DXENON -m32 -maltivec -fno-pic -mpowerpc64 -I$(DEVKITXENON)/usr/include -c main.cpp -o main.o
+
 $(TARGET).elf: $(OBJS)
-	$(CXX) $(OBJS) $(LDFLAGS) -o $@
+> $(CXX) $(OBJS) $(LDFLAGS) -o $@
 
 $(TARGET).elf32: $(TARGET).elf
-	cp $< $@
+> cp $< $@
 
 clean:
-	rm -f *.o *.elf *.elf32
+> rm -f *.o *.elf *.elf32
